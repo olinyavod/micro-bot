@@ -3,11 +3,11 @@ import pyb
 import uasyncio as asyncio
 
 from robot import Robot
-from term import AsyncTerm
+from term import AConsole
 
 
 async def command_process(robot: Robot) -> None:
-    term = AsyncTerm()
+    term = AConsole()
     while True:
         cmd = await term.input("robot> ")
 

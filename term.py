@@ -1,30 +1,56 @@
-import select
 import sys
 import uasyncio as asyncio
 
 
-class AsyncTerm:
-    def __init__(self):
-        self._poller = select.poll()
-        self._poller.register(sys.stdin, select.POLLIN)
+class AConsole:
+    def __init__(self, s_in=sys.stdin, s_out=sys.stdout):
+        self._reader = asyncio.StreamReader(s_in)
+        self._writer = asyncio.StreamWriter(s_out, {})
 
-    def get_char(self):
-        for s, ev in self._poller.poll(500):
-            return s.read(1)
+    async def input(self, prompt='', password=False) -> str:
+        await self._writer.awrite(prompt)
+        result = ""
 
-    async def input(self, prompt=''):
-        result = ''
         while True:
-            c = self.get_char()
-            if (c):
-                if ord(c) == 10: # enter
-                    print()
-                    return result
-                elif ord(c) == 27: # esc
-                    return ''
-                elif ord(c) == 127: # bs
-                    result = result[:-1]
-                else:
-                    result += c
-                sys.stdout.write("%s%s   \r" % (prompt, result))
-            await asyncio.sleep(0.2)
+            c = await self._reader.read(1)
+            n = ord(c)
+
+            if n == 9:  # Tab
+                pass
+            elif n == 10:  # Enter
+                if await self._reader.read(1) == '\n':
+                    break
+            elif n == 8 and len(result) > 0:  # Del
+                if not password:
+                    await self._writer.awrite(f"{c} {c}")
+                result = result[0:len(result)-1]
+                pass
+            # elif n == 32: # Space
+            #    pass
+            elif n == 26:  # ^Z
+                pass
+            elif n == 24:  # ^X
+                pass
+            elif n == 22:  # ^V
+                pass
+            elif n == 2:  # ^B
+                pass
+            elif n == 1:  # ^A
+                pass
+            elif n == 19:  # ^S
+                pass
+            elif n == 7:  # ^G
+                pass
+            elif n == 8:  # ^H
+                pass
+            elif n == 11:  # ^K
+                pass
+            elif n == 12:  # ^L
+                pass
+            else:
+                result += c
+                if not password:
+                    await self._writer.awrite(c)
+
+        await self._writer.awrite("\n\r")
+        return result
